@@ -3,22 +3,22 @@ import tokenService from "../services/token-service";
 
 export async function authMiddleware(req:any, res, next) {
   try {
-    const authorizationHeader = req.headers.authorization;
-    if(!authorizationHeader) {
-      return next(ApiError.UnauthorizedError())
-    }
-
-    const accessToken = authorizationHeader.split(' ')[1];
-
+    const {accessToken} = req.cookies;
     if(!accessToken) {
       return next(ApiError.UnauthorizedError())
     }
 
-    const token =  await tokenService.validateAccessToken(accessToken);
+    const accessTokenWithoutBearer = accessToken.split(' ')[1];
+
+    if(!accessTokenWithoutBearer) {
+      return next(ApiError.UnauthorizedError())
+    }
+
+    const token =  await tokenService.validateAccessToken(accessTokenWithoutBearer);
     if(!token) {
       return next(ApiError.UnauthorizedError())
     }
-    req.headers.authorization = token;
+    res.cookie('accessToken',`Bearer ${token}`, {maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true});
     next()
   } catch (e) {
     return  next(ApiError.UnauthorizedError())

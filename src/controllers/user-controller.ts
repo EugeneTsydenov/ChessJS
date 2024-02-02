@@ -15,7 +15,8 @@ class UserController {
       const newUser: IAuthUser = req.body;
       const tokens = await UserService.registration(newUser);
       res.cookie('refreshToken',tokens.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true});
-      return res.json({accessToken: tokens.accessToken});
+      res.cookie('accessToken',`Bearer ${tokens.accessToken}`, {maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true});
+      return res.json({message: 'You have successfully logged in!'});
     } catch (e: any) {
       return next(e)
     }
@@ -29,8 +30,9 @@ class UserController {
       }
       const user: IAuthUser = req.body;
       const  tokens =await UserService.login(user);
-      res.cookie('refreshToken', tokens.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true})
-      return res.json({accessToken: tokens.accessToken})
+      res.cookie('refreshToken',tokens.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true});
+      res.cookie('accessToken',`Bearer ${tokens.accessToken}`, {maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true});
+      return res.json({message: 'You have successfully logged in!'});
     } catch (e: any) {
       next(e)
     }
@@ -41,6 +43,7 @@ class UserController {
       const {refreshToken} = req.cookies;
       await userService.logout(refreshToken);
       res.clearCookie('refreshToken');
+      res.clearCookie('accessToken');
       return res.json({message: 'You successfully logout!'});
     } catch (e) {
       next(e);
@@ -51,8 +54,9 @@ class UserController {
     try {
       const {refreshToken} = req.cookies;
       const tokens = await userService.refresh(refreshToken);
-      res.cookie('refreshToken', tokens.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true})
-      return res.json({accessToken: tokens.accessToken});
+      res.cookie('refreshToken', tokens.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true});
+      res.cookie('accessToken',`Bearer ${tokens.accessToken}`, {maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true});
+      return res.json({message: 'success'});
     } catch (e) {
       next(e)
     }

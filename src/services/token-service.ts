@@ -42,7 +42,7 @@ class TokenService {
     try {
       return jwt.verify(token, process.env.JWT_ACCESS_SECRET!)
     } catch (e) {
-      console.log(e)
+      console.log(e, 'dsaew')
       throw e;
     }
   }
