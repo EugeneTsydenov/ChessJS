@@ -1,0 +1,30 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.authMiddleware = void 0;
+const api_error_1 = require("../exceptions/api-error");
+const token_service_1 = __importDefault(require("../services/token-service"));
+async function authMiddleware(req, res, next) {
+    try {
+        const authorizationHeader = req.headers.authorization;
+        if (!authorizationHeader) {
+            return next(api_error_1.ApiError.UnauthorizedError());
+        }
+        const accessToken = authorizationHeader.split(' ')[1];
+        if (!accessToken) {
+            return next(api_error_1.ApiError.UnauthorizedError());
+        }
+        const token = await token_service_1.default.validateAccessToken(accessToken);
+        if (!token) {
+            return next(api_error_1.ApiError.UnauthorizedError());
+        }
+        req.headers.authorization = token;
+        next();
+    }
+    catch (e) {
+        return next(api_error_1.ApiError.UnauthorizedError());
+    }
+}
+exports.authMiddleware = authMiddleware;
