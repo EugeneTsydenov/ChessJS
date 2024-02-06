@@ -44,7 +44,7 @@ class UserService {
         throw ApiError.BadRequest('Incorrect password!');
       }
 
-      prismaClient.user.update({
+      await prismaClient.user.update({
         where: {
           id: userDB.id
         },
@@ -92,9 +92,10 @@ class UserService {
       }
 
       const userId = refreshTokenDB.user_id;
-      await tokenService.deleteTokenByUserId(userId);
 
-      prismaClient.user.update({
+      await tokenService.deleteTokenByToken(refreshTokenDB.token);
+
+      await prismaClient.user.update({
         where: {
           id: userId,
         },
@@ -109,7 +110,7 @@ class UserService {
 
   private async findById(userID: string) {
     try {
-      const userDB = prismaClient.user.findFirst({
+      const userDB = await prismaClient.user.findFirst({
         where: {
           id: userID
         }

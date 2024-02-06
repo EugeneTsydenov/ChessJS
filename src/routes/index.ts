@@ -2,6 +2,7 @@ import {Router} from "express";
 import {body} from "express-validator";
 import userController from "../controllers/user-controller";
 import {authMiddleware} from "../middlewares/auth-middleware";
+import { emitSocketData } from "../services/socketService";
 const router:Router = Router();
 
 router.post('/login',
@@ -17,5 +18,8 @@ router.get('/refresh', userController.refresh);
 router.get('/user', authMiddleware, userController.getUser);
 router.post('/test', (req, res, next) => {
   console.log(process.env.DATABASE_URL)
+})
+router.post('/play', authMiddleware, (req, res) => {
+  emitSocketData('search', )
 })
 export default router

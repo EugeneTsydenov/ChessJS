@@ -42,7 +42,7 @@ class TokenService {
             return jsonwebtoken_1.default.verify(token, process.env.JWT_ACCESS_SECRET);
         }
         catch (e) {
-            console.log(e);
+            console.log(e, 'dsaew');
             throw e;
         }
     }
@@ -54,11 +54,11 @@ class TokenService {
             return null;
         }
     }
-    async deleteTokenByUserId(userId) {
+    async deleteTokenByToken(token) {
         try {
-            prisma_client_1.prismaClient.refreshToken.deleteMany({
+            await prisma_client_1.prismaClient.refreshToken.deleteMany({
                 where: {
-                    user_id: userId
+                    token: token
                 }
             });
         }

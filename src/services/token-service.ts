@@ -55,11 +55,11 @@ class TokenService {
     }
   }
 
-  public async deleteTokenByUserId(userId: string) {
+  public async deleteTokenByToken(token: string) {
     try {
-      prismaClient.refreshToken.deleteMany({
+      await prismaClient.refreshToken.deleteMany({
         where: {
-          user_id: userId
+          token: token
         }
       })
     } catch (e) {

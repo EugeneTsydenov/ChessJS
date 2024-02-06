@@ -40,7 +40,7 @@ class UserService {
             if (!passwordMatch) {
                 throw api_error_1.ApiError.BadRequest('Incorrect password!');
             }
-            prisma_client_1.prismaClient.user.update({
+            await prisma_client_1.prismaClient.user.update({
                 where: {
                     id: userDB.id
                 },
@@ -81,8 +81,8 @@ class UserService {
                 throw api_error_1.ApiError.BadRequest('Bad request');
             }
             const userId = refreshTokenDB.user_id;
-            await token_service_2.default.deleteTokenByUserId(userId);
-            prisma_client_1.prismaClient.user.update({
+            await token_service_2.default.deleteTokenByToken(refreshTokenDB.token);
+            await prisma_client_1.prismaClient.user.update({
                 where: {
                     id: userId,
                 },
@@ -97,7 +97,7 @@ class UserService {
     }
     async findById(userID) {
         try {
-            const userDB = prisma_client_1.prismaClient.user.findFirst({
+            const userDB = await prisma_client_1.prismaClient.user.findFirst({
                 where: {
                     id: userID
                 }

@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 import router from "./routes";
 import { errorMiddleware } from "./middlewares/error-middleware";
 
-const app: Express = express();
+export const app: Express = express();
 dotenv.config();
 const PORT = process.env.BASE_PORT || 52718;
 
@@ -29,3 +29,4 @@ const start = (): void => {
   }
 };
 start();
+

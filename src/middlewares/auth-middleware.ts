@@ -1,9 +1,12 @@
 import {ApiError} from "../exceptions/api-error";
 import tokenService from "../services/token-service";
+import {AxiosRequestHeaders, AxiosResponseHeaders} from "axios";
+import {NextFunction} from "express";
 
-export async function authMiddleware(req:any, res, next) {
+export async function authMiddleware(req: AxiosRequestHeaders, res: AxiosResponseHeaders, next: NextFunction) {
   try {
     const {accessToken} = req.cookies;
+    
     if(!accessToken) {
       return next(ApiError.UnauthorizedError())
     }
