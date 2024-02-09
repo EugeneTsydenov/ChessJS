@@ -28,7 +28,7 @@ const start = () => {
         });
     }
     catch (e) {
-        console.log(e, 2);
+        console.log(e);
     }
 };
 start();

@@ -20,11 +20,10 @@ class UserService {
           email: user.email,
           username: user.username,
           hash_password: hashPassword,
-          is_auth: true,
         }
       })
 
-      return await TokenService.addToken(userDB.id);
+      return await TokenService.addTokens(userDB.id);
     } catch (e) {
       throw e;
     }
@@ -44,17 +43,15 @@ class UserService {
         throw ApiError.BadRequest('Incorrect password!');
       }
 
-      await prismaClient.user.update({
+      await prismaClient.user.findFirst({
         where: {
           id: userDB.id
-        },
-        data: {
-          is_auth: true
         }
       })
 
-      return await TokenService.addToken(userDB.id);
+      return await TokenService.addTokens(userDB.id);
     } catch (e) {
+        console.log(e)
       throw e;
     }
   }
@@ -64,45 +61,71 @@ class UserService {
       if(!refreshToken) {
         throw ApiError.UnauthorizedError();
       }
-      const isValidToken = await tokenService.validateRefreshToken(refreshToken);
-      const refreshTokenDB = await tokenService.findToken(refreshToken);
+      const decodedToken = await tokenService.validateRefreshToken(refreshToken);
 
-      if (!refreshTokenDB || !isValidToken) {
-        throw ApiError.UnauthorizedError()
+
+      if(typeof decodedToken === 'object') {
+        const jti = decodedToken?.jti;
+        const tokenFromDB = jti && await tokenService.findTokenByJti(jti);
+        if(!tokenFromDB) {
+          throw ApiError.UnauthorizedError()
+        }
+
+        if(Number(tokenFromDB.user_id) !== decodedToken.userID) {
+          throw ApiError.UnauthorizedError()
+        }
+
+        return await tokenService.addTokens(tokenFromDB.user_id)
       }
-
-      const user = await this.findById(refreshTokenDB.user_id);
-
-      if(!user) {
-        throw ApiError.BadRequest('missing')
-      }
-
-      return await TokenService.addToken(user.id)
     } catch (e) {
       throw e
     }
   }
 
-  public async logout(refreshToken: string) {
+  public async getUser(refreshToken: string) {
     try {
-      const refreshTokenDB = await tokenService.findToken(refreshToken);
+      const decodedToken = await tokenService.validateRefreshToken(refreshToken);
 
-      if(!refreshTokenDB) {
-        throw ApiError.BadRequest('Bad request')
+      if(typeof decodedToken === 'object') {
+        const userId = decodedToken.userID;
+
+        if(!userId) {
+          throw ApiError.UnauthorizedError()
+        }
+
+        const user = await this.findById(userId);
+
+        if(!user) {
+          throw ApiError.UnauthorizedError()
+        }
+
+        return new UserDto(user)
+      }
+    } catch (e) {
+      throw e
+    }
+  }
+
+  public async logout(refreshToken: string, accessToken: string) {
+    try {
+      if(!refreshToken || !accessToken) {
+        throw ApiError.UnauthorizedError()
       }
 
-      const userId = refreshTokenDB.user_id;
+      const decodedRefreshToken = await tokenService.validateRefreshToken(refreshToken);
+      const decodedAccessToken = await tokenService.validateAccessToken(accessToken)
 
-      await tokenService.deleteTokenByToken(refreshTokenDB.token);
+      if(typeof decodedRefreshToken === 'object' && typeof decodedAccessToken === 'object') {
+        const refreshJti = decodedRefreshToken.jti;
+        const accessJti = decodedAccessToken.jti;
 
-      await prismaClient.user.update({
-        where: {
-          id: userId,
-        },
-        data: {
-          is_auth: false
+        if(!refreshJti) {
+          throw ApiError.UnauthorizedError()
         }
-      });
+
+        await tokenService.deleteTokenByJti(accessJti!)
+        await tokenService.deleteTokenByJti(refreshJti)
+      }
     } catch (e) {
       throw e;
     }
@@ -110,13 +133,11 @@ class UserService {
 
   private async findById(userID: string) {
     try {
-      const userDB = await prismaClient.user.findFirst({
+      return await prismaClient.user.findFirst({
         where: {
-          id: userID
+          id: BigInt(userID)
         }
       });
-
-      return userDB;
     } catch (e) {
       throw e
     }
@@ -130,27 +151,6 @@ class UserService {
     })
 
     return user
-  }
-
-  public async getUser(refreshToken: string) {
-    try {
-      const refreshTokenDB = await tokenService.findToken(refreshToken);
-
-      if(!refreshTokenDB) {
-        throw ApiError.BadRequest('Bad request')
-      }
-
-      const userId = refreshTokenDB.user_id;
-      const user = await this.findById(userId);
-
-      if(!user) {
-        throw ApiError.BadRequest('Bad request')
-      }
-
-      return new UserDto(user);
-    } catch (e) {
-      throw e
-    }
   }
 }
 

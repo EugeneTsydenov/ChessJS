@@ -15,8 +15,7 @@ class UserController {
       const newUser: IAuthUser = req.body;
       const tokens = await UserService.registration(newUser);
       res.cookie('refreshToken',tokens.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true});
-      res.cookie('accessToken',`Bearer ${tokens.accessToken}`, {maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true});
-      return res.json({message: 'You have successfully logged in!'});
+      return res.json({accessToken: tokens.accessToken});
     } catch (e: any) {
       return next(e)
     }
@@ -29,10 +28,10 @@ class UserController {
         return next(ApiError.BadRequest('Error validating email or password!'))
       }
       const user: IAuthUser = req.body;
+
       const  tokens =await UserService.login(user);
       res.cookie('refreshToken',tokens.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true});
-      res.cookie('accessToken',`Bearer ${tokens.accessToken}`, {maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true});
-      return res.json({message: 'You have successfully logged in!'});
+      return res.json({accessToken: tokens.accessToken});
     } catch (e: any) {
       next(e)
     }
@@ -41,9 +40,12 @@ class UserController {
   public async logout(req:  Request, res: Response, next: NextFunction):Promise<any> {
     try {
       const {refreshToken} = req.cookies;
-      await userService.logout(refreshToken);
+      const accessToken = req.headers.authorization?.split(' ')[1];
+      if(!accessToken) {
+        throw ApiError.UnauthorizedError()
+      }
+      await userService.logout(refreshToken, accessToken);
       res.clearCookie('refreshToken');
-      res.clearCookie('accessToken');
       return res.json({message: 'You successfully logout!'});
     } catch (e) {
       next(e);
@@ -54,9 +56,11 @@ class UserController {
     try {
       const {refreshToken} = req.cookies;
       const tokens = await userService.refresh(refreshToken);
+      if(!tokens) {
+        throw ApiError.UnauthorizedError()
+      }
       res.cookie('refreshToken', tokens.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true});
-      res.cookie('accessToken',`Bearer ${tokens.accessToken}`, {maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true});
-      return res.json({message: 'success'});
+      return res.json({accessToken: tokens.accessToken});
     } catch (e) {
       next(e)
     }

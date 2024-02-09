@@ -8,11 +8,11 @@ const api_error_1 = require("../exceptions/api-error");
 const token_service_1 = __importDefault(require("../services/token-service"));
 async function authMiddleware(req, res, next) {
     try {
-        const { accessToken } = req.cookies;
-        if (!accessToken) {
+        const accessTokenWithBearer = req.headers.authorization;
+        if (!accessTokenWithBearer) {
             return next(api_error_1.ApiError.UnauthorizedError());
         }
-        const accessTokenWithoutBearer = accessToken.split(' ')[1];
+        const accessTokenWithoutBearer = accessTokenWithBearer.split(' ')[1];
         if (!accessTokenWithoutBearer) {
             return next(api_error_1.ApiError.UnauthorizedError());
         }
@@ -20,7 +20,6 @@ async function authMiddleware(req, res, next) {
         if (!token) {
             return next(api_error_1.ApiError.UnauthorizedError());
         }
-        res.cookie('accessToken', `Bearer ${token}`, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true });
         next();
     }
     catch (e) {

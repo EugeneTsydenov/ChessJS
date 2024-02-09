@@ -17,8 +17,7 @@ class UserController {
             const newUser = req.body;
             const tokens = await user_service_1.default.registration(newUser);
             res.cookie('refreshToken', tokens.refreshToken, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true });
-            res.cookie('accessToken', `Bearer ${tokens.accessToken}`, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true });
-            return res.json({ message: 'You have successfully logged in!' });
+            return res.json({ accessToken: tokens.accessToken });
         }
         catch (e) {
             return next(e);
@@ -33,8 +32,7 @@ class UserController {
             const user = req.body;
             const tokens = await user_service_1.default.login(user);
             res.cookie('refreshToken', tokens.refreshToken, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true });
-            res.cookie('accessToken', `Bearer ${tokens.accessToken}`, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true });
-            return res.json({ message: 'You have successfully logged in!' });
+            return res.json({ accessToken: tokens.accessToken });
         }
         catch (e) {
             next(e);
@@ -43,9 +41,12 @@ class UserController {
     async logout(req, res, next) {
         try {
             const { refreshToken } = req.cookies;
-            await user_service_2.default.logout(refreshToken);
+            const accessToken = req.headers.authorization?.split(' ')[1];
+            if (!accessToken) {
+                throw api_error_1.ApiError.UnauthorizedError();
+            }
+            await user_service_2.default.logout(refreshToken, accessToken);
             res.clearCookie('refreshToken');
-            res.clearCookie('accessToken');
             return res.json({ message: 'You successfully logout!' });
         }
         catch (e) {
@@ -56,9 +57,11 @@ class UserController {
         try {
             const { refreshToken } = req.cookies;
             const tokens = await user_service_2.default.refresh(refreshToken);
+            if (!tokens) {
+                throw api_error_1.ApiError.UnauthorizedError();
+            }
             res.cookie('refreshToken', tokens.refreshToken, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true });
-            res.cookie('accessToken', `Bearer ${tokens.accessToken}`, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true });
-            return res.json({ message: 'success' });
+            return res.json({ accessToken: tokens.accessToken });
         }
         catch (e) {
             next(e);
