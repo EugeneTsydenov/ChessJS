@@ -11,23 +11,24 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
+  id            BigInt   @id @default(autoincrement())
+  email         String   @unique
   hash_password String
-  username      String         @unique
-  avatar        String         @default("https://i.ibb.co/LR40jQH/def-avatar.png")
-  created_at    DateTime       @default(now())
-  is_auth       Boolean        @default(false)
-  refreshToken  RefreshToken[]
+  username      String   @unique
+  avatar        String   @default("https://i.ibb.co/LR40jQH/def-avatar.png")
+  created_at    DateTime @default(now())
+  tokens        Token[]
 
   @@map(name: "users")
 }
 
-model RefreshToken {
-  id      Int    @id @default(autoincrement())
-  token   String
-  user_id String
-  user    User?  @relation(fields: [user_id], references: [id])
+model Token {
+  id         BigInt  @id @default(autoincrement())
+  jti        String
+  token_type Int // 1-access 2-refresh
+  user_id    BigInt
+  user       User?   @relation(fields: [user_id], references: [id])
+  is_revoked Boolean
 
-  @@map(name: "refresh_tokens")
+  @@map(name: "tokens")
 }

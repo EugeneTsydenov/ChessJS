@@ -21,10 +21,9 @@ class UserService {
                     email: user.email,
                     username: user.username,
                     hash_password: hashPassword,
-                    is_auth: true,
                 }
             });
-            return await token_service_1.default.addToken(userDB.id);
+            return await token_service_1.default.addTokens(userDB.id);
         }
         catch (e) {
             throw e;
@@ -40,17 +39,15 @@ class UserService {
             if (!passwordMatch) {
                 throw api_error_1.ApiError.BadRequest('Incorrect password!');
             }
-            await prisma_client_1.prismaClient.user.update({
+            await prisma_client_1.prismaClient.user.findFirst({
                 where: {
                     id: userDB.id
-                },
-                data: {
-                    is_auth: true
                 }
             });
-            return await token_service_1.default.addToken(userDB.id);
+            return await token_service_1.default.addTokens(userDB.id);
         }
         catch (e) {
+            console.log(e);
             throw e;
         }
     }
@@ -59,37 +56,58 @@ class UserService {
             if (!refreshToken) {
                 throw api_error_1.ApiError.UnauthorizedError();
             }
-            const isValidToken = await token_service_2.default.validateRefreshToken(refreshToken);
-            const refreshTokenDB = await token_service_2.default.findToken(refreshToken);
-            if (!refreshTokenDB || !isValidToken) {
-                throw api_error_1.ApiError.UnauthorizedError();
+            const decodedToken = await token_service_2.default.validateRefreshToken(refreshToken);
+            if (typeof decodedToken === 'object') {
+                const jti = decodedToken?.jti;
+                const tokenFromDB = jti && await token_service_2.default.findTokenByJti(jti);
+                if (!tokenFromDB) {
+                    throw api_error_1.ApiError.UnauthorizedError();
+                }
+                if (Number(tokenFromDB.user_id) !== decodedToken.userID) {
+                    throw api_error_1.ApiError.UnauthorizedError();
+                }
+                return await token_service_2.default.addTokens(tokenFromDB.user_id);
             }
-            const user = await this.findById(refreshTokenDB.user_id);
-            if (!user) {
-                throw api_error_1.ApiError.BadRequest('missing');
-            }
-            return await token_service_1.default.addToken(user.id);
         }
         catch (e) {
             throw e;
         }
     }
-    async logout(refreshToken) {
+    async getUser(refreshToken) {
         try {
-            const refreshTokenDB = await token_service_2.default.findToken(refreshToken);
-            if (!refreshTokenDB) {
-                throw api_error_1.ApiError.BadRequest('Bad request');
-            }
-            const userId = refreshTokenDB.user_id;
-            await token_service_2.default.deleteTokenByToken(refreshTokenDB.token);
-            await prisma_client_1.prismaClient.user.update({
-                where: {
-                    id: userId,
-                },
-                data: {
-                    is_auth: false
+            const decodedToken = await token_service_2.default.validateRefreshToken(refreshToken);
+            if (typeof decodedToken === 'object') {
+                const userId = decodedToken.userID;
+                if (!userId) {
+                    throw api_error_1.ApiError.UnauthorizedError();
                 }
-            });
+                const user = await this.findById(userId);
+                if (!user) {
+                    throw api_error_1.ApiError.UnauthorizedError();
+                }
+                return new user_dto_1.UserDto(user);
+            }
+        }
+        catch (e) {
+            throw e;
+        }
+    }
+    async logout(refreshToken, accessToken) {
+        try {
+            if (!refreshToken || !accessToken) {
+                throw api_error_1.ApiError.UnauthorizedError();
+            }
+            const decodedRefreshToken = await token_service_2.default.validateRefreshToken(refreshToken);
+            const decodedAccessToken = await token_service_2.default.validateAccessToken(accessToken);
+            if (typeof decodedRefreshToken === 'object' && typeof decodedAccessToken === 'object') {
+                const refreshJti = decodedRefreshToken.jti;
+                const accessJti = decodedAccessToken.jti;
+                if (!refreshJti) {
+                    throw api_error_1.ApiError.UnauthorizedError();
+                }
+                await token_service_2.default.deleteTokenByJti(accessJti);
+                await token_service_2.default.deleteTokenByJti(refreshJti);
+            }
         }
         catch (e) {
             throw e;
@@ -97,12 +115,11 @@ class UserService {
     }
     async findById(userID) {
         try {
-            const userDB = await prisma_client_1.prismaClient.user.findFirst({
+            return await prisma_client_1.prismaClient.user.findFirst({
                 where: {
-                    id: userID
+                    id: BigInt(userID)
                 }
             });
-            return userDB;
         }
         catch (e) {
             throw e;
@@ -115,23 +132,6 @@ class UserService {
             }
         });
         return user;
-    }
-    async getUser(refreshToken) {
-        try {
-            const refreshTokenDB = await token_service_2.default.findToken(refreshToken);
-            if (!refreshTokenDB) {
-                throw api_error_1.ApiError.BadRequest('Bad request');
-            }
-            const userId = refreshTokenDB.user_id;
-            const user = await this.findById(userId);
-            if (!user) {
-                throw api_error_1.ApiError.BadRequest('Bad request');
-            }
-            return new user_dto_1.UserDto(user);
-        }
-        catch (e) {
-            throw e;
-        }
     }
 }
 exports.default = new UserService();
