@@ -22,16 +22,18 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const socketIo = __importStar(require("socket.io"));
-const http = __importStar(require("http"));
-const index_1 = require("./index");
-const server = http.createServer(index_1.app);
-const io = new socketIo.Server(server, {
+const index_1 = __importDefault(require("./index"));
+const io = new socketIo.Server(index_1.default, {
     cors: {
         origin: process.env.CLIENT_URL,
         methods: ['GET', 'POST'],
         credentials: true
     }
 });
+console.log(io);
 exports.default = io;

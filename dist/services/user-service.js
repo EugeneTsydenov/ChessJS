@@ -47,7 +47,6 @@ class UserService {
             return await token_service_1.default.addTokens(userDB.id);
         }
         catch (e) {
-            console.log(e);
             throw e;
         }
     }
@@ -81,7 +80,7 @@ class UserService {
                 if (!userId) {
                     throw api_error_1.ApiError.UnauthorizedError();
                 }
-                const user = await this.findById(userId);
+                const user = await this.findUserById(userId);
                 if (!user) {
                     throw api_error_1.ApiError.UnauthorizedError();
                 }
@@ -113,7 +112,7 @@ class UserService {
             throw e;
         }
     }
-    async findById(userID) {
+    async findUserById(userID) {
         try {
             return await prisma_client_1.prismaClient.user.findFirst({
                 where: {
