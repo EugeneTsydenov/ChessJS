@@ -14,6 +14,7 @@ import {
   UltraBlitzRoom,
   UltraBulletRoom, UltraClassicalRoom, UltraRapidRoom
 } from "./rooms/mode-rooms";
+import {Chess} from "chess.js";
 
 export const app: Express = express();
 
@@ -35,8 +36,7 @@ const gameServer = new Server({
 
 gameServer.define('ultra-bullet', UltraBulletRoom);
 gameServer.define('bullet', BulletRoom);
-gameServer.define('ultra-blitz', UltraBlitzRoom);
-gameServer.define('hyper-blitz', HyperBlitzRoom);
+gameServer.define('ultra-blitz', UltraBlitzRoom);gameServer.define('hyper-blitz', HyperBlitzRoom);
 gameServer.define('super-blitz', SuperBlitzRoom);
 gameServer.define('blitz', BlitzRoom);
 gameServer.define('ultra-rapid', UltraRapidRoom);
