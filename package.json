@@ -28,6 +28,7 @@
     "@prisma/client": "^5.9.0",
     "axios": "^1.6.5",
     "bcrypt": "^5.1.1",
+    "chess.js": "^1.0.0-beta.7",
     "colyseus": "^0.15.15",
     "colyseus.js": "^0.15.18",
     "cors": "^2.8.5",
