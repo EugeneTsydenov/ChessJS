@@ -4,6 +4,7 @@ import {ApiError} from "../exceptions/api-error";
 import userService from "../services/user-service";
 import * as http from "http";
 import {GameState} from "../colyseus-schemas/game-schema";
+import {IMoveData} from "../models/IMoveData";
 
 export class ChessGameRoom extends Room {
   maxClients = 2;
@@ -95,5 +96,42 @@ export class ChessGameRoom extends Room {
       turn: turn,
       playerColor: randomColor === 'w' ? 'b' : 'w'
     });
+    this.onMessage('move', (client, {moveData}) => {
+      this.move(moveData)
+    })
+  }
+
+  move(moveData: IMoveData) {
+    try {
+      const game = this.gameState.game;
+      game.move(moveData)
+      const fen = game.fen();
+      const turn = game.turn();
+      const isCheck = game.isCheck();
+      const isCheckmate = game.isCheckmate();
+      const isGameOver = game.isGameOver();
+      let kingSquareInCheck = null
+      if (isCheck) {
+        game.board().forEach((rank, rankIndex) => {
+          rank.forEach(squareData => {
+            if(squareData) {
+              if(squareData.type === 'k' && squareData.color === turn) {
+                kingSquareInCheck = squareData.square
+              }
+            }
+          })
+        });
+      }
+      this.broadcast('moved', {
+        fen,
+        turn,
+        isCheck,
+        isCheckmate,
+        isGameOver,
+        kingSquareInCheck
+      })
+    } catch (e) {
+      console.log(e)
+    }
   }
 }

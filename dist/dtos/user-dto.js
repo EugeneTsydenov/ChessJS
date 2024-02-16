@@ -7,7 +7,6 @@ class UserDto {
         this.username = model.username;
         this.avatar = model.avatar;
         this.createdAt = model.created_at;
-        this.isAuth = model.is_auth;
     }
 }
 exports.UserDto = UserDto;
