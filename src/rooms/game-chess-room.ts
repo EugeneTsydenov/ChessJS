@@ -3,13 +3,14 @@ import tokenService from "../services/token-service";
 import {ApiError} from "../exceptions/api-error";
 import userService from "../services/user-service";
 import * as http from "http";
+import {GameState} from "../colyseus-schemas/game-schema";
 
 export class ChessGameRoom extends Room {
   maxClients = 2;
   connectedPlayers: string[] = [];
   accessToken: string = '';
   confirmedPlayers: Client[] = [];
-  userId: string = '';
+  gameState = new GameState()
   totalTime = 30;
   incrementTime = 20
 
@@ -36,7 +37,8 @@ export class ChessGameRoom extends Room {
         }
 
         this.connectedPlayers.push(decodedAccessToken.userID);
-        this.userId = userId
+
+        client.userData = {userId: userId}
       }
       return super.onAuth(client, options, request);
     } catch (e) {
@@ -55,6 +57,9 @@ export class ChessGameRoom extends Room {
   async confirmGame() {
     this.broadcast('confirm game');
     this.onMessage('user confirm game', (sessionId) => {
+      if(!sessionId.userData) {
+        throw new Error('hz [poka')
+      }
       this.confirmedPlayers.push(sessionId)
       if(this.confirmedPlayers.length === 2) {
         this.startGame()
@@ -71,6 +76,24 @@ export class ChessGameRoom extends Room {
   }
 
   startGame() {
-    this.broadcast('start game')
+    const player1 = this.confirmedPlayers[0];
+    const player2 = this.confirmedPlayers[1];
+    const player1Id = player1.userData.userId;
+    const player2Id = player2.userData.userId;
+    const fen = this.gameState.game.fen();
+    const turn = this.gameState.game.turn();
+    const randomColor = Math.random() < 0.5 ? 'w' : 'b'
+    player1.send('start game', {
+      enemy: player2Id,
+      gameFen: fen,
+      turn: turn,
+      playerColor: randomColor === 'w' ? 'w' : 'b'
+    });
+    player2.send('start game', {
+      enemy: player1Id,
+      gameFen: fen,
+      turn: turn,
+      playerColor: randomColor === 'w' ? 'b' : 'w'
+    });
   }
 }
