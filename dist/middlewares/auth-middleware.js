@@ -23,6 +23,7 @@ async function authMiddleware(req, res, next) {
         next();
     }
     catch (e) {
+        console.log(122134);
         return next(api_error_1.ApiError.UnauthorizedError());
     }
 }

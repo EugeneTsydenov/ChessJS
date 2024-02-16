@@ -23,6 +23,7 @@ export async function authMiddleware(req: AxiosRequestHeaders, res, next) {
     }
     next()
   } catch (e) {
+    console.log(122134)
     return  next(ApiError.UnauthorizedError())
   }
 }
