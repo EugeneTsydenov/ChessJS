@@ -5,6 +5,7 @@ import userService from "../services/user-service";
 import * as http from "http";
 import {GameState} from "../colyseus-schemas/game-schema";
 import {IMoveData} from "../models/IMoveData";
+import {Square} from "chess.js";
 
 export class ChessGameRoom extends Room {
   maxClients = 2;
@@ -99,36 +100,55 @@ export class ChessGameRoom extends Room {
     this.onMessage('move', (client, {moveData}) => {
       this.move(moveData)
     })
+    this.onMessage('get moves', (client, {square}) => {
+      this.getMoves(client, square)
+    })
+  }
+
+  getMoves(client: Client, square: Square) {
+    const game = this.gameState.game;
+    const availableMoves = game.moves({square, verbose: true});
+    const squareData = game.get(square);
+
+    const pieces = availableMoves.map(availableMove => {
+      return game.get(availableMove.to)
+    })
+    client.send('available moves', {
+      availableMoves,
+      squareData,
+      pieces
+    })
   }
 
   move(moveData: IMoveData) {
     try {
       const game = this.gameState.game;
-      game.move(moveData)
+      const move = game.move(moveData);
       const fen = game.fen();
       const turn = game.turn();
       const isCheck = game.isCheck();
       const isCheckmate = game.isCheckmate();
       const isGameOver = game.isGameOver();
-      let kingSquareInCheck = null
+      let kingSquareIsInCheck = ''
       if (isCheck) {
         game.board().forEach((rank, rankIndex) => {
           rank.forEach(squareData => {
             if(squareData) {
               if(squareData.type === 'k' && squareData.color === turn) {
-                kingSquareInCheck = squareData.square
+                kingSquareIsInCheck = squareData.square
               }
             }
           })
         });
       }
       this.broadcast('moved', {
+        move,
         fen,
         turn,
         isCheck,
         isCheckmate,
         isGameOver,
-        kingSquareInCheck
+        kingSquareIsInCheck
       })
     } catch (e) {
       console.log(e)
